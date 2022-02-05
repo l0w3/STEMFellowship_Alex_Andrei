@@ -12,7 +12,7 @@ Created on Wed Jan 12 14:15:33 2022
 
 @author: rodra04
 """
-
+#Important libraries import
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 import json
@@ -23,9 +23,11 @@ import DataGetter_improved_working
 from phone_iso3166.country import *
 import pycountry
 
+#Class of the genetic algorithm
 class GA():
     
-    def __init__(self, ranges, population_size, data, budget, maxWind, maxSolar, maxWave):
+    #Definition and storage of important parameters using to train the algorithm
+    def __init__(self, ranges, population_size, data, budget, maxWind, maxSolar, maxWave): 
         
         self.ranges = ranges
         self.population_size = population_size
@@ -46,7 +48,7 @@ class GA():
             self.population.append([x, y, z])
         
         
-    
+    #Our fitness function
     def fitness_function(self, population):
         
         self.fitness_values = []
@@ -55,7 +57,7 @@ class GA():
        # print(self.data[2][2])
         for individual in population:
             
-            
+            #Bring score of individuals that pass the budget or if the maximums are passed
             if individual[0] > self.maxWind or individual[1] > self.maxSolar or individual[2] > self.maxWave or individual[0]*self.data[0][0] +  individual[1]*self.data[1][0] + individual[2]*self.data[2][0] > self.budget:
                 penalty_check = True
             else:
@@ -64,7 +66,7 @@ class GA():
             if penalty_check == True:
                 
                 fitness_individual_value = 0
-            
+            #Fitness score of individuals
             else:
                 
                 fitness_individual_value = individual[0]*self.data[0][1] +  individual[1]*self.data[1][1] + individual[2]*self.data[2][1]
@@ -79,6 +81,7 @@ class GA():
     
         return self.fitness_values_array, self.prices
     
+    #Selection Function
     def selection(self, population, fitness_values_array):
         
         self.individuals_selected = []
@@ -88,7 +91,7 @@ class GA():
         
         #print(self.individuals_selected)
         self.reproduce = []
-        
+        #The probability of reproduction is the normalized fitness value (between 0 and 1)
         individual = 0
         while len(self.reproduce) <= 100:
            
@@ -106,6 +109,7 @@ class GA():
         
         return self.reproduce
     
+    #Crossover of parens
     def combination(self, reproduce):
         
         self.children = []
@@ -142,6 +146,7 @@ class GA():
         
         return self.children
     
+    #Mutation function
     def mutation(self, children, fitness, mutation_matrix, probability):
         
         
@@ -149,7 +154,7 @@ class GA():
         
         for individual in children:
             
-            
+            #If mutate, use the mutation matrix to modify a random gene of the individual 
             if random.randint(0, 100) <= probability:
                 
                 modified = [0, 0, 0]
@@ -214,13 +219,13 @@ class GA():
 
 
 
-
+#HTTP Server to interact with algorithm
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 country = ""
-budget_money = 12800000000
+budget_money = 248000000
 region_list = []
 
 @app.route('/data', methods = ['POST'])
@@ -230,14 +235,11 @@ def getdata():
     global budget_money
     global region_list
     country = pycountry.countries.get(alpha_2 = phone_country(int(json.loads(request.data)["country"][1:]))).name
-##    budget_money = json.loads(request.data)["budget"]
     regions = DataGetter_improved_working.solarOutput(country, 'other', None)
     
     for i in regions:
         region_list.append([i])
     
-##    print(region_list)
-    print(json.loads(request.data)["budget"])
     return jsonify(budget_money, country, regions)
 print(region_list, country)
 @app.route('/region', methods = ['GET'])
@@ -260,11 +262,12 @@ def postregion():
 
 @app.route('/train', methods = ['GET'])
 @cross_origin()
+
+#Training process
 def train():
     global country
     global budget_money
     global region
-    print(country, budget_money, region)
     data = [DataGetter_improved_working.windOutput(DataGetter_improved_working.get_weather(country, 'other')), DataGetter_improved_working.solarOutput(country, 'kilowatts', region), DataGetter_improved_working.waveOutput(country)]
 
 
@@ -279,6 +282,8 @@ def train():
 
     redlight = True
     errorOccured = False
+    
+    #Training loop
     while redlight:
         try:
             algo = GA(ranges = [wind, solar, wave], population_size = 10000, data = data, budget = budget_money, maxWind = 10000, maxSolar = 10000, maxWave = 1000)   
@@ -306,7 +311,6 @@ def train():
                 probability -= 1/(i/10)
                 if probability < probability_min:
                     probability = probability_min
-                #print(probability)
                 
                 if len(initial_pop) != 0:
                     best_values.append(max(fitness))
@@ -322,20 +326,15 @@ def train():
             
             while best_values[len(best_values)-1] != best_values[len(best_values)-199] and budget_money - max(prices_of_thebest) > 10000 and count < 10000:
                 fitness, price = algo.fitness_function(initial_pop)
-##                print(fitness)
                 selected= algo.selection(initial_pop, fitness)
                 
                 children = algo.combination(selected)
-                #print(children)
                 new_pop, matrix = algo.mutation(children, fitness, matrix, probability)
-                ##print(matrix)
                 
-                #print(new_pop)
                 initial_pop = new_pop
                 probability += 1/(i/70)
                 if probability > probability_min:
                     probability = probability_min
-                #print(probability)
                 
                 if len(initial_pop) != 0:
                     best_values.append(max(fitness))
