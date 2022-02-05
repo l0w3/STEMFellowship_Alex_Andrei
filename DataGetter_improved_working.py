@@ -31,7 +31,7 @@ def get_weather(city, mode):
             'freq':'M',
             'resample_method':'mean',
             'location': city,
-            'api-key': '7e0f551b1d5c40acb05b1c06fbcd8a91'}, verify = False)
+            'api-key': 'YOUR API KEY FOR OIKOLAB'}, verify = False)
         
         
     
@@ -53,7 +53,7 @@ def get_weather(city, mode):
             'freq':'M',
             'resample_method':'mean',
             'location': city,
-            'api-key': '7e0f551b1d5c40acb05b1c06fbcd8a91'}, verify = False)
+            'api-key': 'YOUR API KEY FOR OIKOLAB'}, verify = False)
         
         print(request)
     
@@ -416,7 +416,4 @@ def waveOutput(COUNTRY):
         
     
 
-#df = get_weather('Switzerland', 'other')
-#a = windOutput(df)
-#b = solarOutput('Spain', 'kilowatts')
-#c = waveOutput('Switzerland')
+
